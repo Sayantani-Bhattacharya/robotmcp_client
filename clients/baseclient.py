@@ -65,7 +65,6 @@ class MCPClient:
 
     async def serve_query(self, query: str):
         try:
-            
             self.history.append(HumanMessage(content=query))
             response = await self.agent.ainvoke(
                 {"messages": self.history},
