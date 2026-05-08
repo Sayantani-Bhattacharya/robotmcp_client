@@ -62,6 +62,7 @@ class MCPClient:
     async def serve_query(self, query: str):
         try:
             from langchain_core.messages import HumanMessage
+
             self.history.append(HumanMessage(content=query))
             response = await self.agent.ainvoke(
                 {"messages": self.history},
@@ -71,7 +72,11 @@ class MCPClient:
             all_messages = response.get("messages", [])
             raw = all_messages[-1].content
             if isinstance(raw, list):
-                final_answer = " ".join(b["text"] for b in raw if isinstance(b, dict) and b.get("type") == "text")
+                final_answer = " ".join(
+                    b["text"]
+                    for b in raw
+                    if isinstance(b, dict) and b.get("type") == "text"
+                )
             else:
                 final_answer = raw
             self.history = list(all_messages)
