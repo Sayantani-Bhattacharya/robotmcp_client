@@ -8,10 +8,14 @@ from mcp.client.stdio import stdio_client
 
 from langchain_mcp_adapters.tools import load_mcp_tools
 from langchain.agents import create_agent
+from langchain_core.messages import HumanMessage
 from llm_store import get_llm
 import os
 
 load_dotenv()
+
+
+MAX_HISTORY = int(os.getenv("MAX_HISTORY", 20))
 
 
 class MCPClient:
@@ -61,8 +65,7 @@ class MCPClient:
 
     async def serve_query(self, query: str):
         try:
-            from langchain_core.messages import HumanMessage
-
+            
             self.history.append(HumanMessage(content=query))
             response = await self.agent.ainvoke(
                 {"messages": self.history},
@@ -79,7 +82,13 @@ class MCPClient:
                 )
             else:
                 final_answer = raw
-            self.history = list(all_messages)
+            trimmed = list(all_messages)[-MAX_HISTORY:]
+            # Always start on a HumanMessage to avoid orphaned tool_call_ids
+            for i, msg in enumerate(trimmed):
+                if isinstance(msg, HumanMessage):
+                    trimmed = trimmed[i:]
+                    break
+            self.history = trimmed
 
             print("Response:", final_answer)
             return final_answer
