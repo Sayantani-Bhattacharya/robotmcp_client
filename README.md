@@ -15,15 +15,19 @@ Instead of using a Desktop LLM client, it acts as a bridge that integrates an LL
 
 ## 🧠 What It Does
 
-`ros-mcp-client` implements the LLM-side of the MCP protocol.
+`robot-mcp-client` implements the LLM-side of the MCP protocol.
 
 It can:
 - Connect to a `ros-mcp-server` over MCP (stdio or HTTP).
 - Send natural language queries or structured requests to the robot without the need to integrate it with a Desktop LLM client
 - Stream back feedback, sensor data, or responses from the server.
-- Integrate with a local LLM (Gemini, Ollama, Nvidia NeMo).
+- Integrate with multiple LLM providers including OpenAI, Anthropic, Gemini, and Groq (Llama, GPT-OSS).
 
 In short, it lets you run an MCP-compatible client that speaks to robots via the MCP interface — useful for testing, local reasoning, or autonomous AI controllers.
+
+<p align="center">
+  <img src="demo.gif" alt="ROS MCP Client Demo"/>
+</p>
 
 ---
 
@@ -60,8 +64,8 @@ The MCP client is version-agnostic (ROS1 or ROS2).
 
 1. Clone the repository  
 ```bash
-git clone https://github.com/robotmcp/ros-mcp-client.git
-cd ros-mcp-client
+git clone https://github.com/robotmcp/robot-mcp-client.git
+cd robot-mcp-client
 ```
 
 2. Install dependencies
@@ -69,10 +73,20 @@ cd ros-mcp-client
 uv sync  # or pip install -e .
 ```
 
-3. Follow the setup guide for the Gemini Live client:
-   - **[Gemini Live Client](clients/gemini_live/README.md)** - Google Gemini integration
+3. Minimal setup for custom MCP client
+```bash
+./setup.sh
+# Then edit .env and set:
+# - ROS_MCP_SERVER_PATH=/absolute/path/to/ros-mcp-server
+# - LLM_PROVIDER=gpt-oss|openai|anthropic|ollama
+```
 
-4. Start `rosbridge` on the target robot
+4. Run the base client
+```bash
+uv run clients/baseclient.py
+```
+
+5. Start `rosbridge` on the target robot
 ```bash
 ros2 launch rosbridge_server rosbridge_websocket_launch.xml
 ```  
@@ -82,26 +96,60 @@ ros2 launch rosbridge_server rosbridge_websocket_launch.xml
 ## 📁 Project Structure
 
 ```
-ros-mcp-client/
+robot-mcp-client/
+├── .github/
+│   └── workflows/
+│       └── test-setup.yml    # CI for cross-platform setup
 ├── clients/
-│   ├── gemini_live/          # Full-featured Gemini client
-│   │   ├── gemini_client.py  # Main client script
-│   │   ├── mcp.json          # MCP server configuration
-│   │   ├── setup_gemini_client.sh  # Automated setup
-│   │   └── README.md         # Detailed setup guide
-├── config/                   # Shared configuration
-├── scripts/                  # Utility scripts
-├── pyproject.toml           # Python dependencies
-└── README.md               # This file
+│   ├── baseclient.py         # Multi-LLM MCP client (LangGraph)
+│   ├── llm_store.py          # LLM provider configuration
+│   └── gemini_live/          # Gemini Live client
+│       ├── gemini_client.py  # Main client script
+│       ├── mcp.json          # MCP server configuration
+│       ├── setup_gemini_client.sh  # Automated setup
+│       └── README.md         # Detailed setup guide
+├── .env                      # Environment config (not tracked)
+├── setup.sh                  # Cross-platform setup script
+├── pyproject.toml            # Python dependencies
+└── README.md                 # This file
 ```
 
 ---
 
 ## 📚 Available Clients  
 
-The project includes a comprehensive LLM client implementation:
+The project includes multiple LLM client implementations:
 
-### 🤖 **Gemini Live Client** (`clients/gemini_live/`)
+### 🤖 **Base MCP Client** (`clients/baseclient.py`)
+Multi-provider LLM client with support for:
+- **OpenAI**: GPT-4.1
+- **Anthropic**: Claude Sonnet 4.5
+- **Google Gemini**: Gemini 2.5 Flash Lite
+- **Groq** (open-source models):
+  - Llama 4 Scout 17B
+  - Llama 3.1 8B Instant
+  - Llama 3.3 70B Versatile
+  - OpenAI GPT-OSS 120B
+
+**Configuration**: Set `LLM_PROVIDER` in `.env` (see setup.sh)
+
+#### Supported Models
+
+| Provider | Keyword | Parameters |
+|----------|---------|------------|
+| **Proprietary Models** | | |
+| Google Gemini 2.5 Flash Lite | `gemini` | - |
+| OpenAI GPT 4.1 | `openai` | - |
+| Anthropic Claude Sonnet 4.5 | `claude` | - |
+| **Groq (Open Source)** | | |
+| Llama 4 Scout | `llama-scout` | 109B |
+| Llama 3.1 8B Instant | `llama-8b` | 8B |
+| Llama 3.3 70B Versatile | `llama` | 70B |
+| OpenAI GPT OSS | `gpt-oss` | 120B |
+
+**Usage**: Set `LLM_PROVIDER=<keyword>` in your `.env` file (e.g., `LLM_PROVIDER=llama-scout`)
+
+### 🎤 **Gemini Live Client** (`clients/gemini_live/`)
 - **Full-featured** Google Gemini integration
 - **Text-only mode** optimized for WSL
 - **Real-time interaction** with ROS robots
@@ -109,7 +157,12 @@ The project includes a comprehensive LLM client implementation:
 
 ### 🚀 **Quick Start**
 ```bash
-# Try the Gemini Live client
+# Multi-provider base client
+./setup.sh
+# Edit .env: set ROS_MCP_SERVER_PATH and LLM_PROVIDER
+uv run clients/baseclient.py
+
+# Gemini Live client
 cd clients/gemini_live
 ./setup_gemini_client.sh
 uv run gemini_client.py
@@ -134,3 +187,5 @@ Check out the [contributing guidelines](docs/contributing.md) and see issues tag
 
 
 This project is licensed under the [Apache License 2.0](LICENSE).  
+
+agged **good first issue** to get started.  

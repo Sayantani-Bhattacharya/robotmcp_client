@@ -1,0 +1,38 @@
+name: Test Setup Script
+
+on:
+  push:
+    branches: [ feature/langgraph]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run setup script on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python (if needed)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Make setup script executable (Unix)
+        if: runner.os != 'Windows'
+        run: chmod +x setup.sh
+
+      - name: Run setup script (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ./setup.sh
+
+      - name: Run setup script (Windows via bash)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: bash ./setup.sh
